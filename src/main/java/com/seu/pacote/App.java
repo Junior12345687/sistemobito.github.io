@@ -34,6 +34,8 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
+import javafx.print.PrinterJob;
+import javafx.scene.control.TextArea;
 
 public class App extends Application {
     
@@ -174,6 +176,7 @@ public class App extends Application {
         Button addButton = new Button("Adicionar");
         Button refreshButton = new Button("Atualizar Lista");
         Button deleteButton = new Button("Excluir");
+        Button imprimButton = new Button("Imprimir");
         Button sairButton = new Button("Sair");
 
         // Configuração do conversor de data mais robusto
@@ -223,7 +226,7 @@ public class App extends Application {
         // Adiciona os botões na última linha
         GridPane buttonsPane = new GridPane();
         buttonsPane.setHgap(10);
-        buttonsPane.addRow(0, addButton, refreshButton, deleteButton, sairButton);
+        buttonsPane.addRow(0, addButton, refreshButton, deleteButton, imprimButton,sairButton);
         grid.add(buttonsPane, 1, 6);
 
         // Configuração do layout principal
@@ -260,6 +263,7 @@ public class App extends Application {
 
         refreshButton.setOnAction(e -> carregarObitos());
         deleteButton.setOnAction(e -> excluirObito());
+        imprimButton.setOnAction(e -> Imprimir());
         sairButton.setOnAction(e -> Platform.exit());
 
         primaryStage.setTitle("Sistema de Óbitos");
@@ -391,6 +395,59 @@ public class App extends Application {
         }
     }
 
+    private void Imprimir(){
+        Obito selecionado = tableView.getSelectionModel().getSelectedItem();
+        if(selecionado == null){
+            showAlert(Alert.AlertType.WARNING, "Nenhum Item Selecionado", "Selecione um Óbito para imprimir");
+            return;
+        }
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        String dataNasc = selecionado.getData_nascimento() != null ? selecionado.getData_nascimento().format(formatter) : "___/___/___";
+        String dataObito = selecionado.getDataObito() != null ? selecionado.getDataObito().format(formatter) : "___/___/___";
+
+        //Criar o modelo preenchido
+        String modelo = "NOTIFICAÇÃO DE ÓBITO - SINAN\n\n" +
+                        "Dados do Paciente:\n" +
+                        "Nome: " + (selecionado.getNome_paciente() != null ? selecionado.getNome_paciente() : "") + "\n" +
+                        "Data de Nascimento: " + dataNasc + "  Sexo: □ M □ F\n" +
+                        "Nome da Mãe: ________________________________________\n" +
+                        "Dados do Óbito:\n" +
+                        "Data do Óbito: " + dataObito + "  Hora: __:__\n" +
+                        "Local do Óbito: " + (selecionado.getLocal_Obito() != null ? selecionado.getLocal_Obito() : "") + "\n" +
+                        "Causa Básica do Óbito (CID-10): " + (selecionado.getCausaMorte() != null ? selecionado.getCausaMorte() : "") + "\n\n" +
+                        "Dados de Notificação:\n" +
+                        "Unidade de Saúde Notificante: _________________________\n" +
+                        "Proficional Responsável: ______________________________\n" +
+                        "Data de Notificação: __/___/__";
+        
+        TextArea textArea = new TextArea(modelo);
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
+        textArea.setStyle("-fx-font-family: monospace; -fx-font-size: 14px;");
+        
+        Stage printStage = new Stage();
+        printStage.setTitle("Impressão Óbito");
+        VBox root = new VBox(20, textArea);
+        root.setPadding(new Insets(15));
+
+        Button printButton = new Button("Imprimir");
+        printButton.setOnAction(e -> {
+            // Aqui você pode implementar a impressão real usando PrinterJob
+            PrinterJob job = PrinterJob.createPrinterJob();
+            if (job != null && job.showPrintDialog(printStage)) {
+                boolean success = job.printPage(textArea);
+                if (success) {
+                    job.endJob();
+                }
+            }
+        });
+        
+        root.getChildren().add(printButton);
+        
+        printStage.setScene(new Scene(root, 600, 500));
+        printStage.show();
+    }
     @Override
     public void stop() throws Exception {
         logger.log("Aplicação sendo encerada");

@@ -1,0 +1,13 @@
+[2025-08-13 15:37:57.338] Aplicaçao iniciada
+[2025-08-13 15:37:57.696] Conexão com o banco de dados estabelecida com sucesso!
+[2025-08-13 15:37:58.881] Iniciar o carregamento de Obito
+[2025-08-13 15:37:58.961] Óbitos carregados com sucesso: 6 registros
+[2025-08-13 15:38:38.993] Tentativa de adicionar obito - BE: 789456, Nomecriz
+[2025-08-13 15:38:42.976] Iniciar o carregamento de Obito
+[2025-08-13 15:38:42.980] Óbitos carregados com sucesso: 7 registros
+[2025-08-13 15:38:50.291] Iniciar o carregamento de Obito
+[2025-08-13 15:38:50.298] Óbitos carregados com sucesso: 7 registros
+[2025-08-13 15:38:52.092] Iniciar o carregamento de Obito
+[2025-08-13 15:38:52.098] Óbitos carregados com sucesso: 7 registros
+[2025-08-13 15:38:58.248] Aplicação sendo encerada
+[2025-08-13 15:38:58.248] Logger sendo encerrado

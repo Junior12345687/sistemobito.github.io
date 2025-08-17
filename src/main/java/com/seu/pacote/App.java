@@ -1,6 +1,12 @@
 package com.seu.pacote;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -8,11 +14,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
@@ -25,6 +40,7 @@ public class App extends Application {
     private static final String DB_URL = "jdbc:mysql://localhost:3306/cadastro";
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "";
+    private Logger logger;
     
     private TableView<Obito> tableView;
     private ObservableList<Obito> obitosList;
@@ -76,11 +92,14 @@ public class App extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+
+        logger = Logger.getInstance();
+        logger.log("Aplicaçao iniciada");
         try {
             connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-            System.out.println("Conexão com o banco de dados estabelecida com sucesso!");
+            logger.log("Conexão com o banco de dados estabelecida com sucesso!");
         } catch (SQLException e) {
-            System.err.println("Erro ao conectar ao banco de dados: " + e.getMessage());
+            logger.log("Erro ao conectar ao banco de dados: " + e.getMessage());
             showAlert(Alert.AlertType.ERROR, "Erro de Conexão",
                     "Não foi possível conectar ao banco de dados: " + e.getMessage());
             return;
@@ -88,8 +107,12 @@ public class App extends Application {
 
         tableView = new TableView<>();
         obitosList = FXCollections.observableArrayList();
+        tableView.setItems(obitosList);
 
-        // Configuração das colunas
+        tableView.getItems().addListener((ListChangeListener<Obito>)c -> {
+            System.out.println("TableView items changed. Total: " + c.getList().size());
+        });
+
         TableColumn<Obito, Integer> idCol = new TableColumn<>("ID");
         idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
 
@@ -98,31 +121,37 @@ public class App extends Application {
 
         TableColumn<Obito, String> nomeCol = new TableColumn<>("Nome do Paciente");
         nomeCol.setCellValueFactory(new PropertyValueFactory<>("nome_paciente"));
-        
-        TableColumn<Obito, String> nascimentoCol = new TableColumn<>("Data de Nascimento");
+
+        // Coluna de Data de Nascimento - corrigida
+        TableColumn<Obito, LocalDate> nascimentoCol = new TableColumn<>("Data de Nascimento");
         nascimentoCol.setCellValueFactory(new PropertyValueFactory<>("data_nascimento"));
-        nascimentoCol.setCellFactory(column -> new TableCell<Obito, String>() {
+        nascimentoCol.setCellFactory(column -> new TableCell<Obito, LocalDate>() {
+            private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            
             @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
+            protected void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                if (empty || date == null) {
                     setText(null);
                 } else {
-                    setText(item);
+                    setText(formatter.format(date));
                 }
             }
         });
 
-        TableColumn<Obito, String> obitoCol = new TableColumn<>("Data Óbito");
+        // Coluna de Data de Óbito - corrigida
+        TableColumn<Obito, LocalDate> obitoCol = new TableColumn<>("Data Óbito");
         obitoCol.setCellValueFactory(new PropertyValueFactory<>("dataObito"));
-        obitoCol.setCellFactory(column -> new TableCell<Obito, String>() {
+        obitoCol.setCellFactory(column -> new TableCell<Obito, LocalDate>() {
+            private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            
             @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
+            protected void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                if (empty || date == null) {
                     setText(null);
                 } else {
-                    setText(item);
+                    setText(formatter.format(date));
                 }
             }
         });
@@ -145,6 +174,7 @@ public class App extends Application {
         Button addButton = new Button("Adicionar");
         Button refreshButton = new Button("Atualizar Lista");
         Button deleteButton = new Button("Excluir");
+        Button sairButton = new Button("Sair");
 
         // Configuração do conversor de data mais robusto
         StringConverter<LocalDate> converter = new StringConverter<LocalDate>() {
@@ -193,7 +223,7 @@ public class App extends Application {
         // Adiciona os botões na última linha
         GridPane buttonsPane = new GridPane();
         buttonsPane.setHgap(10);
-        buttonsPane.addRow(0, addButton, refreshButton, deleteButton);
+        buttonsPane.addRow(0, addButton, refreshButton, deleteButton, sairButton);
         grid.add(buttonsPane, 1, 6);
 
         // Configuração do layout principal
@@ -230,6 +260,7 @@ public class App extends Application {
 
         refreshButton.setOnAction(e -> carregarObitos());
         deleteButton.setOnAction(e -> excluirObito());
+        sairButton.setOnAction(e -> Platform.exit());
 
         primaryStage.setTitle("Sistema de Óbitos");
         primaryStage.setScene(scene);
@@ -247,6 +278,7 @@ public class App extends Application {
     }
 
     private void carregarObitos() {
+        logger.log("Iniciar o carregamento de Obito");
         try {
             String sql = "SELECT * FROM obitos";
             PreparedStatement stmt = connection.prepareStatement(sql);
@@ -260,7 +292,6 @@ public class App extends Application {
                 obito.setBE(rs.getInt("BE"));
                 obito.setNome_paciente(rs.getString("nome_paciente"));
                 
-                // Tratamento mais seguro para datas
                 Date dataNasc = rs.getDate("data_nascimento");
                 obito.setData_nascimento(dataNasc != null ? dataNasc.toLocalDate() : null);
                 
@@ -272,20 +303,29 @@ public class App extends Application {
                 obitos.add(obito);
             }
             
-            obitosList.setAll(obitos);
-            tableView.setItems(obitosList);
-            System.out.println("Óbitos carregados com sucesso: " + obitos.size() + " registros");
+            // Limpa e atualiza a lista observável
+            obitosList.clear();
+            obitosList.addAll(obitos);
+            
+            // Verificação de debug
+            System.out.println("Total de óbitos carregados: " + obitos.size());
+            for (Obito o : obitos) {
+                System.out.println(o.getId() + " - " + o.getNome_paciente());
+            }
+            
+            logger.log("Óbitos carregados com sucesso: " + obitos.size() + " registros");
             
             rs.close();
             stmt.close();
         } catch (SQLException e) {
-            System.err.println("Erro ao carregar óbitos: " + e.getMessage());
-            showAlert(Alert.AlertType.ERROR, "Erro no Banco de Dados", 
+            logger.log("Erro ao carregar óbitos: " + e.getMessage());
+            showAlert(Alert.AlertType.ERROR, "Erro no Banco de Dados",
                     "Não foi possível carregar os óbitos: " + e.getMessage());
         }
     }
 
     private void adicionarObito(int BE, String nome, LocalDate nascimento, LocalDate obito, String causa, String local) {
+        logger.log("Tentativa de adicionar obito - BE: " + BE + ", Nome" + nome);
         if (nome == null || nome.isEmpty() || nascimento == null || obito == null ||
             causa == null || causa.isEmpty() || local == null || local.isEmpty()) {
             showAlert(Alert.AlertType.WARNING, "Campos Inválidos", "Todos os campos são obrigatórios");
@@ -315,14 +355,15 @@ public class App extends Application {
             
             stmt.close();
         } catch (SQLException e) {
-            System.err.println("Erro ao cadastrar óbito: " + e.getMessage());
-            showAlert(Alert.AlertType.ERROR, "Erro no Banco de Dados", 
+            logger.log("Erro ao cadastrar óbito: " + e.getMessage());
+            showAlert(Alert.AlertType.ERROR, "Erro no Banco de Dados",
                     "Não foi possível cadastrar o óbito: " + e.getMessage());
         }
     }
     
     private void excluirObito() {
         Obito selecionado = tableView.getSelectionModel().getSelectedItem();
+        logger.log("Tentativa de excluir óbito - ID: " + (selecionado != null ? selecionado.getId() : "nenhum selecionado"));
         if (selecionado == null) {
             showAlert(Alert.AlertType.WARNING, "Nenhum Item Selecionado", "Selecione um óbito para excluir");
             return;
@@ -345,13 +386,15 @@ public class App extends Application {
             stmt.close();
         } catch (SQLException e) {
             System.err.println("Erro ao excluir óbito: " + e.getMessage());
-            showAlert(Alert.AlertType.ERROR, "Erro no Banco de Dados", 
+            showAlert(Alert.AlertType.ERROR, "Erro no Banco de Dados",
                     "Não foi possível excluir o óbito: " + e.getMessage());
         }
     }
 
     @Override
     public void stop() throws Exception {
+        logger.log("Aplicação sendo encerada");
+        logger.close();
         if (connection != null && !connection.isClosed()) {
             connection.close();
             System.out.println("Conexão com o banco de dados fechada");

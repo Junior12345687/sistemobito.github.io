@@ -52,6 +52,8 @@
                         <id>default-cli</id>
                         <configuration>
                             <mainClass>com.seu.pacote.App</mainClass>
+                            <artifactId>demo</artifactId>
+                            <version>1.0</version>
                         </configuration>
                     </execution>
                 </executions>

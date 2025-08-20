@@ -1,0 +1,6 @@
+[2025-08-20 11:32:59.458] Aplicação iniciada
+[2025-08-20 11:32:59.758] Conexão com o banco de dados estabelecida com sucesso!
+[2025-08-20 11:33:03.166] Iniciar o carregamento de Óbitos
+[2025-08-20 11:33:03.328] Erro ao carregar óbitos: Column 'enf' not found.
+[2025-08-20 11:35:07.877] Aplicação sendo encerrada
+2025-08-20 11:35:07.880 INFO    Logger sendo encerrado

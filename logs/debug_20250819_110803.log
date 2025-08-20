@@ -1,0 +1,6 @@
+[2025-08-19 11:08:04.501] Aplicaçao iniciada
+[2025-08-19 11:08:04.943] Conexão com o banco de dados estabelecida com sucesso!
+[2025-08-19 11:08:05.939] Iniciar o carregamento de Obito
+[2025-08-19 11:08:06.027] Óbitos carregados com sucesso: 9 registros
+[2025-08-19 11:08:25.094] Aplicação sendo encerada
+2025-08-19 11:08:25.094 INFO    Logger sendo encerrado

@@ -7,7 +7,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -16,9 +19,9 @@ import java.util.List;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.print.PrinterJob;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -38,6 +41,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -76,6 +80,7 @@ public class App extends Application {
     private ObservableList<Obito> obitosList;
     private Connection connection;
     private SplitMenuButton localButton;
+    private Label horaLabel; // Alterado de TextField para Label
 
     public static class Obito {
         private int id;
@@ -83,6 +88,8 @@ public class App extends Application {
         private String nome_paciente;
         private LocalDate data_nascimento;
         private LocalDate dataObito;
+        private LocalTime hora;
+        private String hora_obito;
         private String causaMorte;
         private String local_Obito;
         private String enf;
@@ -96,6 +103,8 @@ public class App extends Application {
             this.nome_paciente = nome_paciente;
             this.data_nascimento = data_nascimento;
             this.dataObito = dataObito;
+            this.hora = hora;
+            this.hora_obito = hora_obito;
             this.causaMorte = causaMorte;
             this.local_Obito = local_Obito;
             this.enf = enf;
@@ -117,6 +126,12 @@ public class App extends Application {
         
         public LocalDate getDataObito() { return dataObito; }
         public void setDataObito(LocalDate dataObito) { this.dataObito = dataObito; }
+
+        public String getHora_obito() {return hora_obito;}
+        public void setHora_obito(String hora_obito) {this.hora_obito = hora_obito;}
+
+        public LocalTime getHora() {return hora;}
+        public void setHora(LocalTime hora) {this.hora = hora;}
         
         public String getCausaMorte() { return causaMorte; }
         public void setCausaMorte(String causaMorte) { this.causaMorte = causaMorte; }
@@ -191,6 +206,22 @@ public class App extends Application {
             }
         });
 
+        TableColumn<Obito, LocalTime> horaCol = new TableColumn<>("Hora Óbito");
+        horaCol.setCellValueFactory(new PropertyValueFactory<>("hora"));
+        horaCol.setCellFactory(column -> new TableCell<Obito, LocalTime>() {
+            private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
+            
+            @Override
+            protected void updateItem(LocalTime time, boolean empty) {
+                super.updateItem(time, empty);
+                if (empty || time == null) {
+                    setText(null);
+                } else {
+                    setText(formatter.format(time));
+                }
+            }
+        });
+
         TableColumn<Obito, String> localCol = new TableColumn<>("Local do Óbito");
         localCol.setCellValueFactory(new PropertyValueFactory<>("local_Obito"));
 
@@ -203,7 +234,7 @@ public class App extends Application {
         TableColumn<Obito, String> leitoCol = new TableColumn<>("Leito");
         leitoCol.setCellValueFactory(new PropertyValueFactory<>("leito"));
 
-        tableView.getColumns().addAll(idCol, beCol, nomeCol, nascimentoCol, obitoCol, localCol, causaCol, enfCol, leitoCol);
+        tableView.getColumns().addAll(idCol, beCol, nomeCol, nascimentoCol, obitoCol, horaCol, localCol, causaCol, enfCol, leitoCol);
 
         // Configuração dos campos de formulário
         TextField beField = new TextField();
@@ -221,6 +252,16 @@ public class App extends Application {
         DatePicker obitoPicker = new DatePicker();
         obitoPicker.setPromptText("Data óbito");
         obitoPicker.setMaxWidth(120);
+
+        TextField hora_obitoField = new TextField();
+        hora_obitoField.setPromptText("Hora do Obito");
+        hora_obitoField.setMaxWidth(120);
+
+        // Label para mostrar a hora atual (apenas visualização)
+        horaLabel = new Label();
+        horaLabel.setMaxWidth(120);
+        horaLabel.setStyle("-fx-border-color: lightgray; -fx-border-radius: 3; -fx-padding: 5;");
+        atualizarHoraAtual(); // Atualiza a hora inicialmente
 
         TextField causaField = new TextField();
         causaField.setPromptText("Causa da morte");
@@ -245,6 +286,7 @@ public class App extends Application {
         enfSpinner.setEditable(true);
         enfSpinner.setMaxWidth(120);
 
+        
         Button addButton = new Button("Adicionar");
         Button refreshButton = new Button("Atualizar Lista");
         Button deleteButton = new Button("Excluir");
@@ -302,12 +344,12 @@ public class App extends Application {
         localButton.getItems().addAll(hospitalMenu, ruaMenu, separator);
 
         // Configuração das ações do menu
-        hospitalAmarelo.setOnAction(e -> updateSelection("Hospital - Área Amarela"));
-        hospitalVermelho.setOnAction(e -> updateSelection("Hospital - Área Vermelha"));
-        hospitalVerde.setOnAction(e -> updateSelection("Hospital - Área Verde"));
-        ruaPraia.setOnAction(e -> updateSelection("Rua - Praia"));
-        ruaPraca.setOnAction(e -> updateSelection("Rua - Praça"));
-        ruaAvenida.setOnAction(e -> updateSelection("Rua - Avenida"));
+        hospitalAmarelo.setOnAction(e -> updateSelection("Área Amarela"));
+        hospitalVermelho.setOnAction(e -> updateSelection("Área Vermelha"));
+        hospitalVerde.setOnAction(e -> updateSelection("Área Verde"));
+        ruaPraia.setOnAction(e -> updateSelection("Praia"));
+        ruaPraca.setOnAction(e -> updateSelection("Praça"));
+        ruaAvenida.setOnAction(e -> updateSelection("Avenida"));
 
         // Configuração do GridPane para o formulário
         GridPane grid = new GridPane();
@@ -324,14 +366,18 @@ public class App extends Application {
         // Segunda linha
         grid.add(new Label("Nascimento:"), 0, 1);
         grid.add(nascimentoPicker, 1, 1);
-        grid.add(new Label("Óbito:"), 2, 1);
+        grid.add(new Label("Data Óbito:"), 2, 1);
         grid.add(obitoPicker, 3, 1);
+        grid.add(new Label("Hora.inf..:"), 4, 1);
+        grid.add(horaLabel, 5, 1);
 
         // Terceira linha
-        grid.add(new Label("Local Óbito:"), 0, 2);
-        grid.add(localButton, 1, 2);
-        grid.add(new Label("Enf...:"), 2, 2);
-        grid.add(enfSpinner, 3, 2);
+        grid.add(new Label("Hora do Óbito:"),0,2);
+        grid.add(hora_obitoField, 1, 2);
+        grid.add(new Label("Local Óbito:"), 2, 2);
+        grid.add(localButton, 3, 2);
+        grid.add(new Label("Enf...:"), 4, 2);
+        grid.add(enfSpinner, 5, 2);
 
         // Quarta linha
         grid.add(new Label("Causa:"), 0, 3);
@@ -339,14 +385,31 @@ public class App extends Application {
         grid.add(new Label("Leito:"), 2, 3);
         grid.add(leitoField, 3, 3);
 
+        Separator separatorFormButtons = new Separator();
+        separatorFormButtons.setOrientation(Orientation.HORIZONTAL);
+        grid.add(separatorFormButtons, 0, 4, 4, 1);
+
         // Quinta linha - botões
         HBox buttonsBox = new HBox(10);
         buttonsBox.getChildren().addAll(addButton, refreshButton, deleteButton, imprimButton, sairButton);
-        grid.add(buttonsBox, 0, 4, 4, 1);
+        grid.add(buttonsBox, 0, 5, 4, 1);
 
         // Configuração do layout principal
         VBox root = new VBox(10);
-        root.getChildren().addAll(grid, tableView);
+        root.setPadding(new Insets(10));
+
+        VBox formContainer = new VBox(grid);
+        formContainer.setMaxWidth(Double.MAX_VALUE);
+        VBox.setVgrow(formContainer, Priority.NEVER);
+
+        VBox tableContainer = new VBox(tableView);
+        tableContainer.setMaxWidth(Double.MAX_VALUE);
+        VBox.setVgrow(tableContainer, Priority.NEVER);
+        
+        Separator separatorTable = new Separator();
+        separatorTable.setOrientation(Orientation.HORIZONTAL);
+
+        root.getChildren().setAll(formContainer, separatorTable, tableContainer);
         VBox.setVgrow(tableView, Priority.ALWAYS);
         
         Scene scene = new Scene(root, 1000, 700);
@@ -354,11 +417,15 @@ public class App extends Application {
         // Configuração dos eventos dos botões
         addButton.setOnAction(e -> {
             try {
+                // Captura a hora atual do sistema
+                LocalTime horaAtual = LocalTime.now();
+                
                 adicionarObito(
                     Integer.parseInt(beField.getText()),
                     nomeField.getText(),
                     nascimentoPicker.getValue(),
                     obitoPicker.getValue(),
+                    horaAtual, // Hora capturada automaticamente
                     causaField.getText(),
                     localButton.getText(),
                     enfSpinner.getValue(),
@@ -371,6 +438,7 @@ public class App extends Application {
                 obitoPicker.setValue(null);
                 causaField.clear();
                 leitoField.clear();
+                atualizarHoraAtual(); // Atualiza a hora para o próximo registro
             } catch (NumberFormatException ex) {
                 showAlert(Alert.AlertType.ERROR, "Erro de Formato", "BE deve ser um número inteiro");
             } catch (Exception ex) {
@@ -388,6 +456,13 @@ public class App extends Application {
         primaryStage.show();
 
         carregarObitos();
+    }
+
+    private void atualizarHoraAtual() {
+        // Atualiza o label com a hora atual do sistema
+        LocalTime horaAtual = LocalTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
+        horaLabel.setText(formatter.format(horaAtual));
     }
 
     private void updateSelection(String text) {
@@ -424,6 +499,9 @@ public class App extends Application {
                 Date dataObito = rs.getDate("dataObito");
                 obito.setDataObito(dataObito != null ? dataObito.toLocalDate() : null);
                 
+                Time hora = rs.getTime("hora");
+                obito.setHora(hora != null ? hora.toLocalTime() : null);
+                
                 obito.setCausaMorte(rs.getString("causaMorte"));
                 obito.setLocal_Obito(rs.getString("local_Obito"));
                 obito.setEnf(rs.getString("enfermaria"));
@@ -447,7 +525,7 @@ public class App extends Application {
     }
 
     private void adicionarObito(int BE, String nome, LocalDate nascimento, LocalDate obito,
-                                String causa, String local, String enf, String leito) {
+                                LocalTime hora, String causa, String local, String enf, String leito) {
         logger.log("Tentativa de adicionar óbito - BE: " + BE + ", Nome: " + nome);
         
         if (nome == null || nome.isEmpty() || nascimento == null || obito == null ||
@@ -458,18 +536,19 @@ public class App extends Application {
         }
         
         try {
-            String sql = "INSERT INTO obitos (BE, nome_paciente, data_nascimento, dataObito, causaMorte, local_Obito, enfermaria, leito) " +
-                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO obitos (BE, nome_paciente, data_nascimento, dataObito, hora, causaMorte, local_Obito, enfermaria, leito) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             stmt.setInt(1, BE);
             stmt.setString(2, nome);
             stmt.setDate(3, Date.valueOf(nascimento));
             stmt.setDate(4, Date.valueOf(obito));
-            stmt.setString(5, causa);
-            stmt.setString(6, local);
-            stmt.setString(7, enf);
-            stmt.setString(8, leito);
+            stmt.setTime(5, Time.valueOf(hora));
+            stmt.setString(6, causa);
+            stmt.setString(7, local);
+            stmt.setString(8, enf);
+            stmt.setString(9, leito);
             
             int affectedRows = stmt.executeUpdate();
             
@@ -524,8 +603,11 @@ public class App extends Application {
         }
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        DateTimeFormatter horaFormatter = DateTimeFormatter.ofPattern("HH:mm");
+        
         String dataNasc = selecionado.getData_nascimento() != null ? selecionado.getData_nascimento().format(formatter) : "___/___/___";
         String dataObito = selecionado.getDataObito() != null ? selecionado.getDataObito().format(formatter) : "___/___/___";
+        String horaObito = selecionado.getHora() != null ? selecionado.getHora().format(horaFormatter) : "__:__";
 
         String modelo = "NOTIFICAÇÃO DE ÓBITO - SINAN\n\n" +
                         "Dados do Paciente:\n" +
@@ -533,7 +615,7 @@ public class App extends Application {
                         "Data de Nascimento: " + dataNasc + "  Sexo: □ M □ F\n" +
                         "Nome da Mãe: ________________________________________\n" +
                         "Dados do Óbito:\n" +
-                        "Data do Óbito: " + dataObito + "  Hora: __:__\n" +
+                        "Data do Óbito: " + dataObito + "  Hora: " + horaObito + "\n" +
                         "Local do Óbito: " + (selecionado.getLocal_Obito() != null ? selecionado.getLocal_Obito() : "") + "\n" +
                         "Causa Básica do Óbito (CID-10): " + (selecionado.getCausaMorte() != null ? selecionado.getCausaMorte() : "") + "\n\n" +
                         "Dados de Notificação:\n" +
